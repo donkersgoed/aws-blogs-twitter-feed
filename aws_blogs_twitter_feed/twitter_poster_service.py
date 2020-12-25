@@ -9,13 +9,14 @@ from aws_cdk import (
     aws_secretsmanager as secretsmanager,
 )
 
+
 class TwitterPosterService(core.Construct):
     """TwitterPosterService class, responsible for posting tweets."""
 
     def __init__(
         self,
         scope: core.Construct,
-        id: str, # pylint:disable=redefined-builtin
+        id: str,  # pylint:disable=redefined-builtin
         table: dynamodb.Table,
         queue: sqs.Queue,
     ) -> None:

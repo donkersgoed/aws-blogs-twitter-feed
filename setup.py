@@ -21,6 +21,7 @@ setuptools.setup(
     install_requires=[
         'aws-cdk.core==1.80.0',
         'aws-cdk.aws-events-targets==1.80.0',
+        'aws-cdk.aws-lambda-event-sources==1.80.0',
         'aws-cdk.aws-secretsmanager==1.80.0',
         'aws-cdk.aws-events==1.80.0',
         'aws-cdk.aws-sqs==1.80.0',

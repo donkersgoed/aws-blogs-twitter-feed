@@ -9,13 +9,14 @@ from aws_cdk import (
     aws_events_targets as events_targets,
 )
 
+
 class BlogFetcherService(core.Construct):
     """BlogFetcherService class, responsible for fetching blogs at AWS."""
 
     def __init__(
         self,
         scope: core.Construct,
-        id: str, # pylint:disable=redefined-builtin
+        id: str,  # pylint:disable=redefined-builtin
         table: dynamodb.Table,
         queue: sqs.Queue,
     ) -> None:
@@ -46,7 +47,7 @@ class BlogFetcherService(core.Construct):
 
         lambda_schedule = events.Schedule.rate(core.Duration.minutes(1))
         event_lambda_target = events_targets.LambdaFunction(handler=handler)
-        _lambda_cw_event = events.Rule(
+        events.Rule(
             self,
             'BlogFetcherEvent',
             description='Scan for new blogs every minute',

@@ -10,12 +10,17 @@ import requests
 import yaml
 
 MAX_BLOG_PAGES = 5
-HTTP_BLOG_URL = 'https://aws.amazon.com/api/dirs/items/search?item.directoryId=blog-posts&sort_by=item.additionalFields.createdDate&sort_order=desc&size=10&item.locale=en_US' # pylint:disable=line-too-long
+HTTP_BLOG_URL = (
+    'https://aws.amazon.com/api/dirs/items/search'
+    '?item.directoryId=blog-posts&sort_by=item.additionalFields.createdDate'
+    '&sort_order=desc&size=10&item.locale=en_US'
+)
 
 table_name = os.environ.get('BLOGS_TABLE')
 queue_url = os.environ.get('TWITTER_POST_QUEUE')
 ddb_client = boto3.client('dynamodb')
 sqs_client = boto3.client('sqs')
+
 
 def lambda_handler(event, _context):
     """Run the Lambda function."""
@@ -26,15 +31,17 @@ def lambda_handler(event, _context):
     aws_blogs.reverse()
     store_blogs_in_ddb_and_sqs(aws_blogs)
 
+
 def store_blogs_in_ddb_and_sqs(aws_blogs):
-    """Store the blog entries in DynamoDB. When successful, store the key in SQS."""
+    """Store the blog entries in DynamoDB. When successful, send it to SQS."""
     print(f'Storing {len(aws_blogs)} items in DDB and SQS.')
     for blog in aws_blogs:
         try:
             store_blog_in_ddb(blog)
             send_url_to_sqs(blog.get('item_url'))
-        except Exception as exc: # pylint:disable=broad-except
-            print(exc) # Print the exception and continue to the next blog
+        except Exception as exc:  # pylint:disable=broad-except
+            print(exc)  # Print the exception and continue to the next blog
+
 
 def store_blog_in_ddb(blog: dict):
     """Take a dictionary and store it in DynamoDB."""
@@ -63,6 +70,7 @@ def store_blog_in_ddb(blog: dict):
         Item=ddb_item
     )
 
+
 def send_url_to_sqs(link_url: str):
     """Send the URL to SQS for further processing."""
     link_md5 = hashlib.md5(link_url.encode()).hexdigest()
@@ -72,6 +80,7 @@ def send_url_to_sqs(link_url: str):
         MessageGroupId=link_md5,
         MessageDeduplicationId=link_md5,
     )
+
 
 def retrieve_blogs_from_aws(latest_blog_in_ddb, page=0):
     """
@@ -111,7 +120,6 @@ def retrieve_blogs_from_aws(latest_blog_in_ddb, page=0):
                 if not description['name'].startswith('*'):
                     categories.append(html.unescape(description['name']))
 
-
         main_category = lookup_category(item_url, categories)
 
         parsed_items.append({
@@ -126,15 +134,21 @@ def retrieve_blogs_from_aws(latest_blog_in_ddb, page=0):
             'date_updated': date_updated,
         })
 
-    if not latest_blog_in_ddb or latest_blog_in_ddb not in [x['item_url'] for x in parsed_items]:
+    if (
+        not latest_blog_in_ddb or
+        latest_blog_in_ddb not in [x['item_url'] for x in parsed_items]
+    ):
         parsed_items += retrieve_blogs_from_aws(latest_blog_in_ddb, page+1)
     elif latest_blog_in_ddb in [x['item_url'] for x in parsed_items]:
         latest_blog_index = next((
-            index for (index, d) in enumerate(parsed_items) if d["item_url"] == latest_blog_in_ddb
+            index for (index, d) in
+            enumerate(parsed_items)
+            if d['item_url'] == latest_blog_in_ddb
         ), None)
         return parsed_items[0:latest_blog_index]
 
     return parsed_items
+
 
 def lookup_category(item_url: str, categories: List[str]):
     """Lookup the main category from the URL. If none is found, use the first category in tags."""
@@ -151,13 +165,14 @@ def lookup_category(item_url: str, categories: List[str]):
     if categories:
         return categories[0]
 
+
 def fetch_latest_from_dynamodb():
     """Scan the entire DynamoDB table and return the item with the highest date_created."""
     all_ddb_items = get_all_ddb_items()
     if not all_ddb_items:
         return None
 
-    latest_item = max(all_ddb_items, key=lambda x:x['date_created']['S'])
+    latest_item = max(all_ddb_items, key=lambda x: x['date_created']['S'])
     return latest_item['blog_url']['S']
 
 

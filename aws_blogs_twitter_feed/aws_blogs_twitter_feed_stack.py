@@ -1,4 +1,5 @@
 """AWS Blogs Twitter Feed stack module."""
+from typing import Any
 
 from aws_cdk import (
     core,
@@ -9,6 +10,7 @@ from aws_cdk import (
 from . import blog_fetcher_service
 from . import twitter_poster_service
 
+
 class AwsBlogsTwitterFeedStack(core.Stack):
     """Main AWS Blogs Twitter Feed CloudFormation stack."""
 
@@ -16,7 +18,7 @@ class AwsBlogsTwitterFeedStack(core.Stack):
         self,
         scope: core.Construct,
         construct_id: str,
-        **kwargs
+        **kwargs: Any
     ) -> None:
         """Constuct a new AwsBlogsTwitterFeedStack."""
         super().__init__(scope, construct_id, **kwargs)
@@ -44,13 +46,13 @@ class AwsBlogsTwitterFeedStack(core.Stack):
         )
 
         blog_fetcher_service.BlogFetcherService(
-            self, "BlogFetcher",
+            self, 'BlogFetcher',
             table=blogs_table,
             queue=twitter_post_queue
         )
 
         twitter_poster_service.TwitterPosterService(
-            self, "TwitterPoster",
+            self, 'TwitterPoster',
             table=blogs_table,
             queue=twitter_post_queue
         )
