@@ -7,7 +7,7 @@ with open('README.md') as fp:
 
 setuptools.setup(
     name='aws_blogs_twitter_feed',
-    version='0.0.1',
+    version='1.0.0',
 
     description='An empty CDK Python app',
     long_description=long_description,
@@ -20,9 +20,18 @@ setuptools.setup(
 
     install_requires=[
         'aws-cdk.core==1.80.0',
+        'aws-cdk.aws-events-targets==1.80.0',
+        'aws-cdk.aws-secretsmanager==1.80.0',
+        'aws-cdk.aws-events==1.80.0',
+        'aws-cdk.aws-sqs==1.80.0',
+        'aws-cdk.aws-lambda==1.80.0',
+        'aws-cdk.aws-dynamodb==1.80.0',
+        'PyYAML==5.3',
+        'boto3==1.16.9',
+        'TwitterAPI==2.6.2.1'
     ],
 
-    python_requires='>=3.6',
+    python_requires='>=3.7',
 
     classifiers=[
         'Development Status :: 4 - Beta',
