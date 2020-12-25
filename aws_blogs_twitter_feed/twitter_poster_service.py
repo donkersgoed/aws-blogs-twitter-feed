@@ -11,7 +11,7 @@ from aws_cdk import (
 
 class TwitterPosterService(core.Construct):
     """TwitterPosterService class, responsible for posting tweets."""
-    # pylint:disable=duplicate-code
+
     def __init__(
         self,
         scope: core.Construct,
