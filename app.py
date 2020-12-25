@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Main CDK App."""
 
 from aws_cdk import core
 

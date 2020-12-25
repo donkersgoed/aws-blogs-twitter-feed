@@ -1,3 +1,4 @@
+"""Setup for CDK project."""
 import setuptools
 
 
