@@ -26,7 +26,7 @@ class BlogFetcherService(core.Construct):
         lambda_layer = lambda_.LayerVersion(
             self,
             'BlogFetcherLambdaLayer',
-            code=lambda_.Code.asset('resources/blog_fetcher_layer/layer.zip'),
+            code=lambda_.Code.asset('resources/layers/blog_fetcher/layer.zip'),
             compatible_runtimes=[lambda_.Runtime.PYTHON_3_8],
         )
 
@@ -34,7 +34,7 @@ class BlogFetcherService(core.Construct):
             self,
             'BlogFetcherFunction',
             runtime=lambda_.Runtime.PYTHON_3_8,
-            code=lambda_.Code.asset('resources/blog_fetcher'),
+            code=lambda_.Code.asset('resources/functions/blog_fetcher'),
             handler='main.lambda_handler',
             environment=dict(
                 BLOGS_TABLE=table.table_name,

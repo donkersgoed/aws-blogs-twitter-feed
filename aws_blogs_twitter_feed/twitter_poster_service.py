@@ -26,7 +26,7 @@ class TwitterPosterService(core.Construct):
         lambda_layer = lambda_.LayerVersion(
             self,
             'TwitterPostLambdaLayer',
-            code=lambda_.Code.asset('resources/twitter_poster_layer/layer.zip'),
+            code=lambda_.Code.asset('resources/layers/twitter_poster/layer.zip'),
             compatible_runtimes=[lambda_.Runtime.PYTHON_3_8],
         )
 
@@ -39,7 +39,7 @@ class TwitterPosterService(core.Construct):
             self,
             'TwitterPostFunction',
             runtime=lambda_.Runtime.PYTHON_3_8,
-            code=lambda_.Code.asset('resources/twitter_poster'),
+            code=lambda_.Code.asset('resources/functions/twitter_poster'),
             handler='main.lambda_handler',
             environment=dict(
                 BLOGS_TABLE=table.table_name,
