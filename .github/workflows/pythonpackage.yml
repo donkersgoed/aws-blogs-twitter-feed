@@ -30,4 +30,4 @@ jobs:
         pydocstyle
     - name: Lint with pylint
       run: |
-        pylint aws_blogs_twitter_feed/*
+        pylint resources/functions/*/*.py aws_blogs_twitter_feed

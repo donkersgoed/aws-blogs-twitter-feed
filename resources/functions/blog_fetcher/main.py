@@ -101,18 +101,6 @@ def retrieve_blogs_from_aws(latest_blog_in_ddb, page=0):
         blog_item = item['item']
         additional_fields = blog_item['additionalFields']
 
-        try:
-            item_url = additional_fields['link']
-            authors = html.unescape(json.loads(blog_item['author']))
-            date_created = blog_item['dateCreated']
-            date_updated = blog_item['dateUpdated']
-            title = html.unescape(additional_fields['title'])
-        except KeyError:
-            continue
-
-        featured_image_url = additional_fields.get('featuredImageUrl')
-        post_excerpt = html.unescape(additional_fields.get('postExcerpt'))
-
         categories = []
         for tag in item['tags']:
             if tag['tagNamespaceId'] == 'blog-posts#category':
@@ -120,19 +108,21 @@ def retrieve_blogs_from_aws(latest_blog_in_ddb, page=0):
                 if not description['name'].startswith('*'):
                     categories.append(html.unescape(description['name']))
 
-        main_category = lookup_category(item_url, categories)
-
-        parsed_items.append({
-            'item_url': item_url,
-            'title': title,
-            'main_category': main_category,
-            'categories': categories,
-            'post_excerpt': post_excerpt,
-            'featured_image_url': featured_image_url,
-            'authors': authors,
-            'date_created': date_created,
-            'date_updated': date_updated,
-        })
+        try:
+            item_url = additional_fields['link']
+            parsed_items.append({
+                'item_url': item_url,
+                'title': html.unescape(additional_fields['title']),
+                'main_category': lookup_category(item_url, categories),
+                'categories': categories,
+                'post_excerpt': html.unescape(additional_fields.get('postExcerpt')),
+                'featured_image_url': additional_fields.get('featuredImageUrl'),
+                'authors': html.unescape(json.loads(blog_item['author'])),
+                'date_created': blog_item['dateCreated'],
+                'date_updated': blog_item['dateUpdated'],
+            })
+        except KeyError:
+            continue
 
     if (
         not latest_blog_in_ddb or
