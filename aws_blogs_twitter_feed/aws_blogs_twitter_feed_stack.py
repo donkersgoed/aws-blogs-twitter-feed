@@ -4,7 +4,7 @@ from typing import Any
 from aws_cdk import (
     core,
     aws_dynamodb as dynamodb,
-    aws_sqs as sqs
+    aws_sqs as sqs,
 )
 
 from . import blog_fetcher_service

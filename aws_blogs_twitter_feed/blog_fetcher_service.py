@@ -7,6 +7,7 @@ from aws_cdk import (
     aws_lambda as lambda_,
     aws_events as events,
     aws_events_targets as events_targets,
+    aws_ssm as ssm,
 )
 
 
@@ -16,12 +17,18 @@ class BlogFetcherService(core.Construct):
     def __init__(
         self,
         scope: core.Construct,
-        id: str,  # pylint:disable=redefined-builtin
+        construct_id: str,
         table: dynamodb.Table,
         queue: sqs.Queue,
     ) -> None:
         """Construct a new BlogFetcherService."""
-        super().__init__(scope, id)
+        super().__init__(scope, construct_id)
+
+        last_post_parameter = ssm.StringParameter(
+            self,
+            'LastPostParameter',
+            string_value='Not Set'
+        )
 
         lambda_layer = lambda_.LayerVersion(
             self,
@@ -38,7 +45,8 @@ class BlogFetcherService(core.Construct):
             handler='main.lambda_handler',
             environment=dict(
                 BLOGS_TABLE=table.table_name,
-                TWITTER_POST_QUEUE=queue.queue_url
+                TWITTER_POST_QUEUE=queue.queue_url,
+                LAST_POST_PARAMETER=last_post_parameter.parameter_name
             ),
             layers=[lambda_layer],
             timeout=core.Duration.seconds(10),
@@ -51,10 +59,12 @@ class BlogFetcherService(core.Construct):
             self,
             'BlogFetcherEvent',
             description='Scan for new blogs every minute',
-            enabled=True,
+            enabled=False,
             schedule=lambda_schedule,
             targets=[event_lambda_target]
         )
 
-        table.grant_read_write_data(handler)
+        table.grant_write_data(handler)
         queue.grant_send_messages(handler)
+        last_post_parameter.grant_read(handler)
+        last_post_parameter.grant_write(handler)

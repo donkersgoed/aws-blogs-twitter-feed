@@ -9,7 +9,7 @@ import boto3
 import requests
 import yaml
 
-MAX_BLOG_PAGES = 5
+MAX_BLOG_PAGES = 6
 HTTP_BLOG_URL = (
     'https://aws.amazon.com/api/dirs/items/search'
     '?item.directoryId=blog-posts&sort_by=item.additionalFields.createdDate'
@@ -19,6 +19,7 @@ HTTP_BLOG_URL = (
 table_name = os.environ.get('BLOGS_TABLE')
 queue_url = os.environ.get('TWITTER_POST_QUEUE')
 ddb_client = boto3.client('dynamodb')
+ssm_client = boto3.client('ssm')
 sqs_client = boto3.client('sqs')
 
 
@@ -26,7 +27,7 @@ def lambda_handler(event, _context):
     """Run the Lambda function."""
     print(json.dumps(event))
 
-    latest_blog_in_ddb = fetch_latest_from_dynamodb()
+    latest_blog_in_ddb = fetch_latest_item()
     aws_blogs = retrieve_blogs_from_aws(latest_blog_in_ddb)
     aws_blogs.reverse()
     store_blogs_in_ddb_and_sqs(aws_blogs)
@@ -35,12 +36,18 @@ def lambda_handler(event, _context):
 def store_blogs_in_ddb_and_sqs(aws_blogs):
     """Store the blog entries in DynamoDB. When successful, send it to SQS."""
     print(f'Storing {len(aws_blogs)} items in DDB and SQS.')
+    last_stored_blog_url = None
     for blog in aws_blogs:
         try:
+            blog_url = blog.get('item_url')
             store_blog_in_ddb(blog)
-            send_url_to_sqs(blog.get('item_url'))
+            send_url_to_sqs(blog_url)
+            last_stored_blog_url = blog_url
         except Exception as exc:  # pylint:disable=broad-except
             print(exc)  # Print the exception and continue to the next blog
+        break
+
+    set_last_blog_item(last_stored_blog_url)
 
 
 def store_blog_in_ddb(blog: dict):
@@ -67,7 +74,8 @@ def store_blog_in_ddb(blog: dict):
 
     ddb_client.put_item(
         TableName=table_name,
-        Item=ddb_item
+        Item=ddb_item,
+        ConditionExpression='attribute_not_exists(blog_url)'
     )
 
 
@@ -156,27 +164,20 @@ def lookup_category(item_url: str, categories: List[str]):
         return categories[0]
 
 
-def fetch_latest_from_dynamodb():
-    """Scan the entire DynamoDB table and return the item with the highest date_created."""
-    all_ddb_items = get_all_ddb_items()
-    if not all_ddb_items:
-        return None
-
-    latest_item = max(all_ddb_items, key=lambda x: x['date_created']['S'])
-    return latest_item['blog_url']['S']
-
-
-def get_all_ddb_items():
-    """Scan the entire DynamoDB table with a paginator."""
-    paginator = ddb_client.get_paginator('scan')
-
-    response_iterator = paginator.paginate(
-        TableName=table_name,
-        AttributesToGet=['blog_url', 'date_created']
+def fetch_latest_item():
+    """Fetch the last processed blog post from the SSM Parameter Store."""
+    response = ssm_client.get_parameter(
+        Name=os.environ.get('LAST_POST_PARAMETER')
     )
-    items = []
-    for response in response_iterator:
-        page_items = response['Items']
-        items += page_items
 
-    return items
+    return response['Parameter']['Value']
+
+
+def set_last_blog_item(blog_url):
+    """Store the last processed blog post in the SSM Parameter Store."""
+    if blog_url:
+        ssm_client.put_parameter(
+            Name=os.environ.get('LAST_POST_PARAMETER'),
+            Value=blog_url,
+            Overwrite=True
+        )
