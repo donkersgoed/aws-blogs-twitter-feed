@@ -12,3 +12,5 @@ cdk.out
 env/
 .venv
 .vscode
+
+.DS_Store

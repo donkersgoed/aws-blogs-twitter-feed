@@ -1,4 +1,4 @@
 [flake8]
-exclude = .git,__pycache__,.venv,env
+exclude = .git,__pycache__,.venv,env,resources/layers
 max-complexity = 10
 max-line-length = 120

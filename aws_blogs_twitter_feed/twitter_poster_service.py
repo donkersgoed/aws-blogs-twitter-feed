@@ -1,11 +1,8 @@
 """Twitter Poster Service module."""
 from aws_cdk import (
     core,
-    aws_dynamodb as dynamodb,
-    aws_sqs as sqs,
     aws_lambda as lambda_,
     aws_lambda_event_sources as lambda_event_sources,
-    aws_secretsmanager as secretsmanager,
 )
 
 
@@ -16,8 +13,7 @@ class TwitterPosterService(core.Construct):
         self,
         scope: core.Construct,
         construct_id: str,
-        table: dynamodb.Table,
-        queue: sqs.Queue,
+        resources: dict,
     ) -> None:
         """Construct a new TwitterPosterService."""
         super().__init__(scope, construct_id)
@@ -29,11 +25,6 @@ class TwitterPosterService(core.Construct):
             compatible_runtimes=[lambda_.Runtime.PYTHON_3_8],
         )
 
-        twitter_secret = secretsmanager.Secret(
-            self,
-            'TwitterSecret'
-        )
-
         handler = lambda_.Function(
             self,
             'TwitterPostFunction',
@@ -41,8 +32,9 @@ class TwitterPosterService(core.Construct):
             code=lambda_.Code.asset('resources/functions/twitter_poster'),
             handler='main.lambda_handler',
             environment=dict(
-                BLOGS_TABLE=table.table_name,
-                TWITTER_SECRET=twitter_secret.secret_name
+                BLOGS_TABLE=resources['table'].table_name,
+                TWITTER_SECRET=resources['twitter_secret'].secret_name,
+                TWITTER_THREAD_QUEUE=resources['twitter_thread_queue'].queue_url,
             ),
             layers=[lambda_layer],
             tracing=lambda_.Tracing.ACTIVE
@@ -50,10 +42,11 @@ class TwitterPosterService(core.Construct):
 
         # SQS Event Source
         sqs_event_source = lambda_event_sources.SqsEventSource(
-            queue=queue
+            queue=resources['twitter_post_queue']
         )
         handler.add_event_source(sqs_event_source)
 
-        table.grant_read_write_data(handler)
-        queue.grant_consume_messages(handler)
-        twitter_secret.grant_read(handler)
+        resources['table'].grant_read_write_data(handler)
+        resources['twitter_thread_queue'].grant_send_messages(handler)
+        resources['twitter_post_queue'].grant_consume_messages(handler)
+        resources['twitter_secret'].grant_read(handler)

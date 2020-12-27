@@ -1,4 +1,5 @@
 """Twitter Poster Lambda module."""
+import hashlib
 import json
 import os
 from typing import List
@@ -8,8 +9,10 @@ import yaml
 from TwitterAPI import TwitterAPI
 
 table_name = os.environ.get('BLOGS_TABLE')
+queue_url = os.environ.get('TWITTER_THREAD_QUEUE')
 ddb_client = boto3.client('dynamodb')
 sm_client = boto3.client('secretsmanager')
+sqs_client = boto3.client('sqs')
 
 
 def lambda_handler(event, _context):
@@ -36,6 +39,17 @@ def get_twitter_api():
     )
 
 
+def send_url_to_tweet_thread_sqs(link_url: str):
+    """Send the URL to SQS for further processing."""
+    link_md5 = hashlib.md5(link_url.encode()).hexdigest()
+    sqs_client.send_message(
+        QueueUrl=queue_url,
+        MessageBody=link_url,
+        MessageGroupId=link_md5,
+        MessageDeduplicationId=link_md5,
+    )
+
+
 def handle_blog_post(blog_url: str, twitter_api: TwitterAPI):
     """Fetch blog post data and post to Twitter."""
     ddb_item = get_ddb_item(blog_url)
@@ -46,10 +60,11 @@ def handle_blog_post(blog_url: str, twitter_api: TwitterAPI):
 
     twitter_text = prepare_twitter_text(ddb_item)
     tweet_response = send_tweet(twitter_text, twitter_api)
-    update_ddb_item_with_tweet_url(blog_url, tweet_response)
+    update_ddb_item_with_tweet_id(blog_url, tweet_response)
+    send_url_to_tweet_thread_sqs(blog_url)
 
 
-def update_ddb_item_with_tweet_url(blog_url: str, tweet_response: dict) -> None:
+def update_ddb_item_with_tweet_id(blog_url: str, tweet_response: dict) -> None:
     """Update the item in DDB with the tweet ID."""
     tweet_id = tweet_response['id_str']
     ddb_client.update_item(
