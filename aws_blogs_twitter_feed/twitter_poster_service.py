@@ -17,7 +17,9 @@ class TwitterPosterService(core.Construct):
         scope: core.Construct,
         construct_id: str,
         table: dynamodb.Table,
-        queue: sqs.Queue,
+        twitter_post_queue: sqs.Queue,
+        twitter_thread_queue: sqs.Queue,
+        twitter_secret: secretsmanager.Secret
     ) -> None:
         """Construct a new TwitterPosterService."""
         super().__init__(scope, construct_id)
@@ -29,11 +31,6 @@ class TwitterPosterService(core.Construct):
             compatible_runtimes=[lambda_.Runtime.PYTHON_3_8],
         )
 
-        twitter_secret = secretsmanager.Secret(
-            self,
-            'TwitterSecret'
-        )
-
         handler = lambda_.Function(
             self,
             'TwitterPostFunction',
@@ -42,7 +39,8 @@ class TwitterPosterService(core.Construct):
             handler='main.lambda_handler',
             environment=dict(
                 BLOGS_TABLE=table.table_name,
-                TWITTER_SECRET=twitter_secret.secret_name
+                TWITTER_SECRET=twitter_secret.secret_name,
+                TWITTER_THREAD_QUEUE=twitter_thread_queue.queue_url,
             ),
             layers=[lambda_layer],
             tracing=lambda_.Tracing.ACTIVE
@@ -50,10 +48,11 @@ class TwitterPosterService(core.Construct):
 
         # SQS Event Source
         sqs_event_source = lambda_event_sources.SqsEventSource(
-            queue=queue
+            queue=twitter_post_queue
         )
         handler.add_event_source(sqs_event_source)
 
         table.grant_read_write_data(handler)
-        queue.grant_consume_messages(handler)
+        twitter_thread_queue.grant_send_messages(handler)
+        twitter_post_queue.grant_consume_messages(handler)
         twitter_secret.grant_read(handler)

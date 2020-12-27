@@ -5,10 +5,12 @@ from aws_cdk import (
     core,
     aws_dynamodb as dynamodb,
     aws_sqs as sqs,
+    aws_secretsmanager as secretsmanager,
 )
 
 from . import blog_fetcher_service
 from . import twitter_poster_service
+from . import excerpt_poster_service
 
 
 class AwsBlogsTwitterFeedStack(core.Stack):
@@ -31,6 +33,12 @@ class AwsBlogsTwitterFeedStack(core.Stack):
             ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST
         )
+
+        twitter_secret = secretsmanager.Secret(
+            self,
+            'TwitterSecret'
+        )
+
         twitter_post_dlq = sqs.Queue(
             self, 'TwitterPostDLQ',
             fifo=True
@@ -45,14 +53,37 @@ class AwsBlogsTwitterFeedStack(core.Stack):
             )
         )
 
+        twitter_thread_dlq = sqs.Queue(
+            self, 'TwitterThreadDLQ',
+            fifo=True
+        )
+
+        twitter_thread_queue = sqs.Queue(
+            self, 'TwitterThreadQueue',
+            fifo=True,
+            dead_letter_queue=sqs.DeadLetterQueue(
+                max_receive_count=3,
+                queue=twitter_thread_dlq
+            )
+        )
+
         blog_fetcher_service.BlogFetcherService(
             self, 'BlogFetcher',
             table=blogs_table,
-            queue=twitter_post_queue
+            twitter_post_queue=twitter_post_queue
         )
 
         twitter_poster_service.TwitterPosterService(
             self, 'TwitterPoster',
             table=blogs_table,
-            queue=twitter_post_queue
+            twitter_post_queue=twitter_post_queue,
+            twitter_thread_queue=twitter_thread_queue,
+            twitter_secret=twitter_secret,
+        )
+
+        excerpt_poster_service.ExcerptPosterService(
+            self, 'ExcerptPoster',
+            table=blogs_table,
+            twitter_thread_queue=twitter_thread_queue,
+            twitter_secret=twitter_secret,
         )

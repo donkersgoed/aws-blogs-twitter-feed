@@ -19,7 +19,7 @@ class BlogFetcherService(core.Construct):
         scope: core.Construct,
         construct_id: str,
         table: dynamodb.Table,
-        queue: sqs.Queue,
+        twitter_post_queue: sqs.Queue,
     ) -> None:
         """Construct a new BlogFetcherService."""
         super().__init__(scope, construct_id)
@@ -45,7 +45,7 @@ class BlogFetcherService(core.Construct):
             handler='main.lambda_handler',
             environment=dict(
                 BLOGS_TABLE=table.table_name,
-                TWITTER_POST_QUEUE=queue.queue_url,
+                TWITTER_POST_QUEUE=twitter_post_queue.queue_url,
                 LAST_POST_PARAMETER=last_post_parameter.parameter_name
             ),
             layers=[lambda_layer],
@@ -65,6 +65,6 @@ class BlogFetcherService(core.Construct):
         )
 
         table.grant_write_data(handler)
-        queue.grant_send_messages(handler)
+        twitter_post_queue.grant_send_messages(handler)
         last_post_parameter.grant_read(handler)
         last_post_parameter.grant_write(handler)
