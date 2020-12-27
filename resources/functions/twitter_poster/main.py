@@ -57,7 +57,7 @@ def update_ddb_item_with_tweet_url(blog_url: str, tweet_response: dict) -> None:
         Key={'blog_url': {'S': blog_url}},
         AttributeUpdates={
             'tweet_id': {
-                'Value': { 'S': tweet_id }
+                'Value': {'S': tweet_id}
             }
         }
     )

@@ -45,7 +45,6 @@ def store_blogs_in_ddb_and_sqs(aws_blogs):
             last_stored_blog_url = blog_url
         except Exception as exc:  # pylint:disable=broad-except
             print(exc)  # Print the exception and continue to the next blog
-        break
 
     set_last_blog_item(last_stored_blog_url)
 
