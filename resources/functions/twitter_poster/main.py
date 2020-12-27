@@ -138,6 +138,7 @@ def get_ddb_item(blog_url: str):
     """Get an item from DDB by primary key."""
     response = ddb_client.get_item(
         TableName=table_name,
-        Key={'blog_url': {'S': blog_url}}
+        Key={'blog_url': {'S': blog_url}},
+        ConsistentRead=True
     )
     return response['Item']

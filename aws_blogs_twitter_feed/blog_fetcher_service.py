@@ -59,7 +59,7 @@ class BlogFetcherService(core.Construct):
             self,
             'BlogFetcherEvent',
             description='Scan for new blogs every minute',
-            enabled=False,
+            enabled=True,
             schedule=lambda_schedule,
             targets=[event_lambda_target]
         )
