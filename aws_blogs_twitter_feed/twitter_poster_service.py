@@ -15,12 +15,12 @@ class TwitterPosterService(core.Construct):
     def __init__(
         self,
         scope: core.Construct,
-        id: str,  # pylint:disable=redefined-builtin
+        construct_id: str,
         table: dynamodb.Table,
         queue: sqs.Queue,
     ) -> None:
         """Construct a new TwitterPosterService."""
-        super().__init__(scope, id)
+        super().__init__(scope, construct_id)
 
         lambda_layer = lambda_.LayerVersion(
             self,
@@ -54,6 +54,6 @@ class TwitterPosterService(core.Construct):
         )
         handler.add_event_source(sqs_event_source)
 
-        table.grant_read_data(handler)
+        table.grant_read_write_data(handler)
         queue.grant_consume_messages(handler)
         twitter_secret.grant_read(handler)

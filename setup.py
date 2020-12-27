@@ -26,6 +26,7 @@ setuptools.setup(
         'aws-cdk.aws-secretsmanager==1.80.0',
         'aws-cdk.aws-events==1.80.0',
         'aws-cdk.aws-sqs==1.80.0',
+        'aws-cdk.aws-ssm==1.80.0',
         'aws-cdk.aws-lambda==1.80.0',
         'aws-cdk.aws-dynamodb==1.80.0',
         'PyYAML==5.3',

@@ -39,13 +39,42 @@ def get_twitter_api():
 def handle_blog_post(blog_url: str, twitter_api: TwitterAPI):
     """Fetch blog post data and post to Twitter."""
     ddb_item = get_ddb_item(blog_url)
+    if 'tweet_id' in ddb_item:
+        tweet_id = ddb_item['tweet_id']['S']
+        blog_url = ddb_item['blog_url']['S']
+        raise ValueError(f'A tweet with ID {tweet_id} was found for blog {blog_url}')
+
     twitter_text = prepare_twitter_text(ddb_item)
-    send_tweet(twitter_text, twitter_api)
+    tweet_response = send_tweet(twitter_text, twitter_api)
+    update_ddb_item_with_tweet_url(blog_url, tweet_response)
+
+
+def update_ddb_item_with_tweet_url(blog_url: str, tweet_response: dict) -> None:
+    """Update the item in DDB with the tweet ID."""
+    tweet_id = tweet_response['id_str']
+    ddb_client.update_item(
+        TableName=table_name,
+        Key={'blog_url': {'S': blog_url}},
+        AttributeUpdates={
+            'tweet_id': {
+                'Value': {'S': tweet_id}
+            }
+        }
+    )
 
 
 def send_tweet(twitter_text: str, twitter_api: TwitterAPI):
     """Use the Twitter API to send a tweet."""
-    twitter_api.request('statuses/update', {'status': twitter_text})
+    response = twitter_api.request('statuses/update', {'status': twitter_text})
+    body = response.json()
+    if response.status_code != 200:
+        error_strs = [f'{x["code"]}: {x["message"]}' for x in body['errors']]
+        errors = f'[{", ".join(error_strs)}]'
+        raise Exception(
+            f'Post Status failed with status code {response.status_code}. '
+            f'Errors: {errors}'
+        )
+    return body
 
 
 def prepare_twitter_text(ddb_item):
@@ -109,6 +138,7 @@ def get_ddb_item(blog_url: str):
     """Get an item from DDB by primary key."""
     response = ddb_client.get_item(
         TableName=table_name,
-        Key={'blog_url': {'S': blog_url}}
+        Key={'blog_url': {'S': blog_url}},
+        ConsistentRead=True
     )
     return response['Item']
