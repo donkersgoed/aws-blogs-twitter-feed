@@ -75,15 +75,19 @@ class AwsBlogsTwitterFeedStack(core.Stack):
 
         twitter_poster_service.TwitterPosterService(
             self, 'TwitterPoster',
-            table=blogs_table,
-            twitter_post_queue=twitter_post_queue,
-            twitter_thread_queue=twitter_thread_queue,
-            twitter_secret=twitter_secret,
+            resources={
+                'table': blogs_table,
+                'twitter_post_queue': twitter_post_queue,
+                'twitter_thread_queue': twitter_thread_queue,
+                'twitter_secret': twitter_secret,
+            }
         )
 
         excerpt_poster_service.ExcerptPosterService(
             self, 'ExcerptPoster',
-            table=blogs_table,
-            twitter_thread_queue=twitter_thread_queue,
-            twitter_secret=twitter_secret,
+            resources={
+                'table': blogs_table,
+                'twitter_thread_queue': twitter_thread_queue,
+                'twitter_secret': twitter_secret,
+            }
         )

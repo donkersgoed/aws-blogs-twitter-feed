@@ -1,3 +1,3 @@
 [pydocstyle]
 match = (?!test_).*\.py
-match_dir = ^(?!(env|cdk.out)).*
+match_dir = ^(?!(env|cdk.out|layers)).*

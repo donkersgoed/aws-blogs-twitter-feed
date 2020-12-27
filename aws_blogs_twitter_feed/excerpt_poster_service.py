@@ -1,11 +1,8 @@
 """Excerpt Excerpt Service module."""
 from aws_cdk import (
     core,
-    aws_dynamodb as dynamodb,
-    aws_sqs as sqs,
     aws_lambda as lambda_,
     aws_lambda_event_sources as lambda_event_sources,
-    aws_secretsmanager as secretsmanager,
 )
 
 
@@ -16,9 +13,7 @@ class ExcerptPosterService(core.Construct):
         self,
         scope: core.Construct,
         construct_id: str,
-        table: dynamodb.Table,
-        twitter_thread_queue: sqs.Queue,
-        twitter_secret: secretsmanager.Secret
+        resources: dict
     ) -> None:
         """Construct a new ExcerptPosterService."""
         super().__init__(scope, construct_id)
@@ -37,9 +32,9 @@ class ExcerptPosterService(core.Construct):
             code=lambda_.Code.asset('resources/functions/excerpt_poster'),
             handler='main.lambda_handler',
             environment=dict(
-                BLOGS_TABLE=table.table_name,
-                TWITTER_SECRET=twitter_secret.secret_name,
-                TWITTER_THREAD_QUEUE=twitter_thread_queue.queue_url,
+                BLOGS_TABLE=resources['table'].table_name,
+                TWITTER_SECRET=resources['twitter_secret'].secret_name,
+                TWITTER_THREAD_QUEUE=resources['twitter_thread_queue'].queue_url,
             ),
             layers=[lambda_layer],
             tracing=lambda_.Tracing.ACTIVE
@@ -47,10 +42,10 @@ class ExcerptPosterService(core.Construct):
 
         # SQS Event Source
         sqs_event_source = lambda_event_sources.SqsEventSource(
-            queue=twitter_thread_queue
+            queue=resources['twitter_thread_queue']
         )
         handler.add_event_source(sqs_event_source)
 
-        table.grant_read_write_data(handler)
-        twitter_thread_queue.grant_consume_messages(handler)
-        twitter_secret.grant_read(handler)
+        resources['table'].grant_read_write_data(handler)
+        resources['twitter_thread_queue'].grant_consume_messages(handler)
+        resources['twitter_secret'].grant_read(handler)

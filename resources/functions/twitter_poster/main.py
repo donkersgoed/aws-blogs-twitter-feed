@@ -49,6 +49,7 @@ def send_url_to_tweet_thread_sqs(link_url: str):
         MessageDeduplicationId=link_md5,
     )
 
+
 def handle_blog_post(blog_url: str, twitter_api: TwitterAPI):
     """Fetch blog post data and post to Twitter."""
     ddb_item = get_ddb_item(blog_url)
@@ -61,6 +62,7 @@ def handle_blog_post(blog_url: str, twitter_api: TwitterAPI):
     tweet_response = send_tweet(twitter_text, twitter_api)
     update_ddb_item_with_tweet_id(blog_url, tweet_response)
     send_url_to_tweet_thread_sqs(blog_url)
+
 
 def update_ddb_item_with_tweet_id(blog_url: str, tweet_response: dict) -> None:
     """Update the item in DDB with the tweet ID."""
