@@ -64,7 +64,8 @@ class AwsBlogsTwitterFeedStack(core.Stack):
             dead_letter_queue=sqs.DeadLetterQueue(
                 max_receive_count=3,
                 queue=twitter_thread_dlq
-            )
+            ),
+            delivery_delay=core.Duration.seconds(15)
         )
 
         blog_fetcher_service.BlogFetcherService(
