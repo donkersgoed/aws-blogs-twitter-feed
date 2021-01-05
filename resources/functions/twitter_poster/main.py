@@ -47,6 +47,7 @@ def send_url_to_tweet_thread_sqs(link_url: str):
         MessageBody=link_url,
         MessageGroupId=link_md5,
         MessageDeduplicationId=link_md5,
+        DelaySeconds=30  # Delay this message for 30 seconds so Twitter can catch up.
     )
 
 
