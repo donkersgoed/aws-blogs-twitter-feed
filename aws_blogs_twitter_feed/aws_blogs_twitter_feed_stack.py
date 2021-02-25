@@ -26,12 +26,25 @@ class AwsBlogsTwitterFeedStack(core.Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         blogs_table = dynamodb.Table(
-            self, 'BlogsTable',
+            self, 'BlogsTableV2',
             partition_key=dynamodb.Attribute(
-                name='blog_url',
+                name='PK',
                 type=dynamodb.AttributeType.STRING
             ),
-            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST
+            sort_key=dynamodb.Attribute(
+                name='SK',
+                type=dynamodb.AttributeType.STRING
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            point_in_time_recovery=True,
+        )
+
+        blogs_table.add_global_secondary_index(
+            index_name='main_category_idx',
+            partition_key=dynamodb.Attribute(
+                name='main_category',
+                type=dynamodb.AttributeType.STRING
+            )
         )
 
         twitter_secret = secretsmanager.Secret(
@@ -71,7 +84,7 @@ class AwsBlogsTwitterFeedStack(core.Stack):
         blog_fetcher_service.BlogFetcherService(
             self, 'BlogFetcher',
             table=blogs_table,
-            twitter_post_queue=twitter_post_queue
+            twitter_post_queue=twitter_post_queue,
         )
 
         twitter_poster_service.TwitterPosterService(

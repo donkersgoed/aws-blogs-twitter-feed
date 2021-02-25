@@ -36,16 +36,16 @@ def get_twitter_api():
     )
 
 
-def handle_blog_post(blog_url: str, twitter_api: TwitterAPI):
+def handle_blog_post(sort_key: str, twitter_api: TwitterAPI):
     """Fetch blog post data and post to Twitter."""
-    ddb_item = get_ddb_item(blog_url)
+    ddb_item = get_ddb_item(sort_key)
     if 'excerpt_id' in ddb_item:
         excerpt_id = ddb_item['excerpt_id']['S']
         blog_url = ddb_item['blog_url']['S']
         raise ValueError(f'A excerpt tweet with ID {excerpt_id} was found for blog {blog_url}')
 
     if 'tweet_id' not in ddb_item:
-        raise ValueError(f'The item for blog {blog_url} does not have a tweet_id.')
+        raise ValueError(f'The item for blog {sort_key} does not have a tweet_id.')
 
     tweet_id = ddb_item['tweet_id']['S']
 
@@ -54,15 +54,18 @@ def handle_blog_post(blog_url: str, twitter_api: TwitterAPI):
         raise ValueError('Got no texts to post')
 
     tweet_response = send_tweets(twitter_texts, tweet_id, twitter_api)
-    update_ddb_item_with_excerpt_tweet_id(blog_url, tweet_response)
+    update_ddb_item_with_excerpt_tweet_id(sort_key, tweet_response)
 
 
-def update_ddb_item_with_excerpt_tweet_id(blog_url: str, tweet_response: dict) -> None:
+def update_ddb_item_with_excerpt_tweet_id(sort_key: str, tweet_response: dict) -> None:
     """Update the item in DDB with the tweet ID."""
     tweet_id = tweet_response['id_str']
     ddb_client.update_item(
         TableName=table_name,
-        Key={'blog_url': {'S': blog_url}},
+        Key={
+            'PK': {'S': 'BlogPost'}, 
+            'SK': {'S': sort_key}
+        },
         AttributeUpdates={
             'excerpt_id': {
                 'Value': {'S': tweet_id}
@@ -134,11 +137,14 @@ def prepare_twitter_texts(ddb_item):
     return texts
 
 
-def get_ddb_item(blog_url: str):
-    """Get an item from DDB by primary key."""
+def get_ddb_item(sort_key: str):
+    """Get an item from DDB by PK and SK."""
     response = ddb_client.get_item(
         TableName=table_name,
-        Key={'blog_url': {'S': blog_url}},
+        Key={
+            'PK': {'S': 'BlogPost'}, 
+            'SK': {'S': sort_key}
+        },
         ConsistentRead=True
     )
     return response['Item']
