@@ -63,7 +63,7 @@ def update_ddb_item_with_excerpt_tweet_id(sort_key: str, tweet_response: dict) -
     ddb_client.update_item(
         TableName=table_name,
         Key={
-            'PK': {'S': 'BlogPost'}, 
+            'PK': {'S': 'BlogPost'},
             'SK': {'S': sort_key}
         },
         AttributeUpdates={
@@ -142,7 +142,7 @@ def get_ddb_item(sort_key: str):
     response = ddb_client.get_item(
         TableName=table_name,
         Key={
-            'PK': {'S': 'BlogPost'}, 
+            'PK': {'S': 'BlogPost'},
             'SK': {'S': sort_key}
         },
         ConsistentRead=True

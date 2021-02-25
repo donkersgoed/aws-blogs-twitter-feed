@@ -81,14 +81,14 @@ def store_blog_in_ddb(blog: dict):
         ddb_client.put_item(
             TableName=table_name,
             Item={
-                'PK': {'S': 'BlogPost'}, 
+                'PK': {'S': 'BlogPost'},
                 'SK': {'S': f'{date_created}#{item_unique_id}'},
                 **ddb_item
             },
             ConditionExpression='attribute_not_exists(PK) AND attribute_not_exists(SK)'
         )
     except ClientError as exc:
-        if exc.response['Error']['Code'] == 'ConditionalCheckFailedException':  
+        if exc.response['Error']['Code'] == 'ConditionalCheckFailedException':
             print(f'Tried to insert an item that already exists in table v2: {item_url}')
         else:
             raise exc
@@ -98,13 +98,13 @@ def store_blog_in_ddb(blog: dict):
             ddb_client.put_item(
                 TableName=table_name,
                 Item={
-                    'PK': {'S': 'Author'}, 
+                    'PK': {'S': 'Author'},
                     'SK': {'S': author},
                 },
                 ConditionExpression='attribute_not_exists(PK) AND attribute_not_exists(SK)'
             )
         except ClientError as exc:
-            if exc.response['Error']['Code'] == 'ConditionalCheckFailedException':  
+            if exc.response['Error']['Code'] == 'ConditionalCheckFailedException':
                 pass
             else:
                 print(f'Got ClientError while adding Author {author}: {exc}')

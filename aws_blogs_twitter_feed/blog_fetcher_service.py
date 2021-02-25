@@ -7,7 +7,6 @@ from aws_cdk import (
     aws_lambda as lambda_,
     aws_events as events,
     aws_events_targets as events_targets,
-    aws_ssm as ssm,
 )
 
 
