@@ -207,7 +207,7 @@ def fetch_latest_item():
         )
         latest_item = response['Items'][0]['blog_url']
         print(f'Got latest item from DDB: {latest_item}')
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-except
         print(f'Failed to fetch latest item: {exc}')
 
     return latest_item
