@@ -24,12 +24,6 @@ class BlogFetcherService(core.Construct):
         """Construct a new BlogFetcherService."""
         super().__init__(scope, construct_id)
 
-        last_post_parameter = ssm.StringParameter(
-            self,
-            'LastPostParameter',
-            string_value='Not Set'
-        )
-
         lambda_layer = lambda_.LayerVersion(
             self,
             'BlogFetcherLambdaLayer',
@@ -46,7 +40,6 @@ class BlogFetcherService(core.Construct):
             environment=dict(
                 BLOGS_TABLE=table.table_name,
                 TWITTER_POST_QUEUE=twitter_post_queue.queue_url,
-                LAST_POST_PARAMETER=last_post_parameter.parameter_name
             ),
             layers=[lambda_layer],
             timeout=core.Duration.seconds(10),
@@ -64,7 +57,5 @@ class BlogFetcherService(core.Construct):
             targets=[event_lambda_target]
         )
 
-        table.grant_write_data(handler)
+        table.grant_read_write_data(handler)
         twitter_post_queue.grant_send_messages(handler)
-        last_post_parameter.grant_read(handler)
-        last_post_parameter.grant_write(handler)

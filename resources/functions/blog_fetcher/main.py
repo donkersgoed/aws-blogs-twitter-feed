@@ -4,6 +4,8 @@ import html
 import json
 import os
 from typing import List
+from botocore.exceptions import ClientError
+from boto3.dynamodb.conditions import Key
 
 import boto3
 import requests
@@ -36,26 +38,29 @@ def lambda_handler(event, _context):
 def store_blogs_in_ddb_and_sqs(aws_blogs):
     """Store the blog entries in DynamoDB. When successful, send it to SQS."""
     print(f'Storing {len(aws_blogs)} items in DDB and SQS.')
-    last_stored_blog_url = None
     for blog in aws_blogs:
         try:
-            blog_url = blog.get('item_url')
+            date_created = blog['date_created']
+            item_unique_id = hashlib.md5(blog['item_url'].encode()).hexdigest()
+            sort_key = f'{date_created}#{item_unique_id}'
             store_blog_in_ddb(blog)
-            send_url_to_sqs(blog_url)
-            last_stored_blog_url = blog_url
+            send_sort_key_to_sqs(sort_key)
         except Exception as exc:  # pylint:disable=broad-except
             print(exc)  # Print the exception and continue to the next blog
-
-    set_last_blog_item(last_stored_blog_url)
 
 
 def store_blog_in_ddb(blog: dict):
     """Take a dictionary and store it in DynamoDB."""
+    item_url = blog.get('item_url')
+    main_category = blog.get('main_category')
+    date_created = blog.get('date_created')
+    item_unique_id = hashlib.md5(item_url.encode()).hexdigest()
+
     ddb_item = {
-        'blog_url': {'S': blog.get('item_url')},
-        'date_created': {'S': blog.get('date_created')},
+        'blog_url': {'S': item_url},
+        'date_created': {'S': date_created},
         'title': {'S': blog.get('title')},
-        'main_category': {'S': blog.get('main_category')},
+        'main_category': {'S': main_category},
         'categories': {'SS': blog.get('categories')},
         'authors': {'SS': blog.get('authors')},
         'date_updated': {'S': blog.get('date_updated')},
@@ -71,21 +76,29 @@ def store_blog_in_ddb(blog: dict):
     else:
         ddb_item['post_excerpt'] = {'NULL': True}
 
-    ddb_client.put_item(
-        TableName=table_name,
-        Item=ddb_item,
-        ConditionExpression='attribute_not_exists(blog_url)'
-    )
+    try:
+        ddb_client.put_item(
+            TableName=table_name,
+            Item={
+                'PK': {'S': 'BlogPost'}, 
+                'SK': {'S': f'{date_created}#{item_unique_id}'},
+                **ddb_item
+            },
+            ConditionExpression='attribute_not_exists(PK) AND attribute_not_exists(SK)'
+        )
+    except ClientError as exc:  
+        if exc.response['Error']['Code'] == 'ConditionalCheckFailedException':  
+            print(f'Tried to insert an item that already exists in table v2: {item_url}')
+        else:
+            raise exc
 
-
-def send_url_to_sqs(link_url: str):
-    """Send the URL to SQS for further processing."""
-    link_md5 = hashlib.md5(link_url.encode()).hexdigest()
+def send_sort_key_to_sqs(sort_key: str):
+    """Send the Sort Key to SQS for further processing."""
     sqs_client.send_message(
         QueueUrl=queue_url,
-        MessageBody=link_url,
-        MessageGroupId=link_md5,
-        MessageDeduplicationId=link_md5,
+        MessageBody=sort_key,
+        MessageGroupId=sort_key,
+        MessageDeduplicationId=sort_key,
     )
 
 
@@ -165,18 +178,18 @@ def lookup_category(item_url: str, categories: List[str]):
 
 def fetch_latest_item():
     """Fetch the last processed blog post from the SSM Parameter Store."""
-    response = ssm_client.get_parameter(
-        Name=os.environ.get('LAST_POST_PARAMETER')
-    )
-
-    return response['Parameter']['Value']
-
-
-def set_last_blog_item(blog_url):
-    """Store the last processed blog post in the SSM Parameter Store."""
-    if blog_url:
-        ssm_client.put_parameter(
-            Name=os.environ.get('LAST_POST_PARAMETER'),
-            Value=blog_url,
-            Overwrite=True
+    latest_item = None
+    try:
+        posts_table = boto3.resource('dynamodb').Table(table_name)
+        response = posts_table.query(
+            KeyConditionExpression=Key('PK').eq('BlogPost'),
+            ConsistentRead=True,
+            ScanIndexForward=False,
+            Limit=1
         )
+        latest_item = response['Items'][0]['blog_url']
+        print(f'Got latest item from DDB: {latest_item}')
+    except Exception as exc:
+        print(f'Failed to fetch latest item: {exc}')
+
+    return latest_item

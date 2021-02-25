@@ -39,20 +39,19 @@ def get_twitter_api():
     )
 
 
-def send_url_to_tweet_thread_sqs(link_url: str):
+def send_sort_key_to_tweet_thread_sqs(sort_key: str):
     """Send the URL to SQS for further processing."""
-    link_md5 = hashlib.md5(link_url.encode()).hexdigest()
     sqs_client.send_message(
         QueueUrl=queue_url,
-        MessageBody=link_url,
-        MessageGroupId=link_md5,
-        MessageDeduplicationId=link_md5
+        MessageBody=sort_key,
+        MessageGroupId=sort_key,
+        MessageDeduplicationId=sort_key
     )
 
 
-def handle_blog_post(blog_url: str, twitter_api: TwitterAPI):
+def handle_blog_post(sort_key: str, twitter_api: TwitterAPI):
     """Fetch blog post data and post to Twitter."""
-    ddb_item = get_ddb_item(blog_url)
+    ddb_item = get_ddb_item(sort_key)
     if 'tweet_id' in ddb_item:
         tweet_id = ddb_item['tweet_id']['S']
         blog_url = ddb_item['blog_url']['S']
@@ -60,16 +59,19 @@ def handle_blog_post(blog_url: str, twitter_api: TwitterAPI):
 
     twitter_text = prepare_twitter_text(ddb_item)
     tweet_response = send_tweet(twitter_text, twitter_api)
-    update_ddb_item_with_tweet_id(blog_url, tweet_response)
-    send_url_to_tweet_thread_sqs(blog_url)
+    update_ddb_item_with_tweet_id(sort_key, tweet_response)
+    send_sort_key_to_tweet_thread_sqs(sort_key)
 
 
-def update_ddb_item_with_tweet_id(blog_url: str, tweet_response: dict) -> None:
+def update_ddb_item_with_tweet_id(sort_key: str, tweet_response: dict) -> None:
     """Update the item in DDB with the tweet ID."""
     tweet_id = tweet_response['id_str']
     ddb_client.update_item(
         TableName=table_name,
-        Key={'blog_url': {'S': blog_url}},
+        Key={
+            'PK': {'S': 'BlogPost'}, 
+            'SK': {'S': sort_key}
+        },
         AttributeUpdates={
             'tweet_id': {
                 'Value': {'S': tweet_id}
@@ -149,11 +151,14 @@ def prepare_authors(authors: List[str]):
     return authors_string
 
 
-def get_ddb_item(blog_url: str):
-    """Get an item from DDB by primary key."""
+def get_ddb_item(sort_key: str):
+    """Get an item from DDB by PK and SK."""
     response = ddb_client.get_item(
         TableName=table_name,
-        Key={'blog_url': {'S': blog_url}},
+        Key={
+            'PK': {'S': 'BlogPost'}, 
+            'SK': {'S': sort_key}
+        },
         ConsistentRead=True
     )
     return response['Item']
