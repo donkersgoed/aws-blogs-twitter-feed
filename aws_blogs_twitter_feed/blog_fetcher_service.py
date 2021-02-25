@@ -42,7 +42,8 @@ class BlogFetcherService(core.Construct):
                 TWITTER_POST_QUEUE=twitter_post_queue.queue_url,
             ),
             layers=[lambda_layer],
-            timeout=core.Duration.seconds(10),
+            timeout=core.Duration.seconds(30),
+            memory_size=256,
             tracing=lambda_.Tracing.ACTIVE
         )
 
