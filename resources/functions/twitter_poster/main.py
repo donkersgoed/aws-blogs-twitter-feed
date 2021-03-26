@@ -4,7 +4,6 @@ import os
 from typing import List
 
 import boto3
-import yaml
 from TwitterAPI import TwitterAPI
 
 table_name = os.environ.get('BLOGS_TABLE')

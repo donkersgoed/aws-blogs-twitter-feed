@@ -1,3 +1,4 @@
+"""Tool to add twitter handles to known AWS Blog Authors."""
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
 
@@ -5,11 +6,17 @@ table_name = 'aws-blogs-twitter-feed-BlogsTableV24493143C-18E0LOVY9EAQ4'
 dynamodb = boto3.resource('dynamodb')
 table_resource = dynamodb.Table(table_name)
 
+
 def fetch_and_fill():
+    """Fetch the first author with unknown Twitter handle."""
     author_no_details = get_last_author_without_details()
+    if not author_no_details:
+        print('No authors to update')
+        return
+
     author_name = author_no_details['SK']
     print(author_name)
-    
+
     has_handle = None
     while has_handle is None:
         response = input(f"Does '{author_name}' have a twitter handle (y/n)? ")
@@ -32,7 +39,9 @@ def fetch_and_fill():
             'has_twitter': False
         })
 
+
 def get_last_author_without_details():
+    """Loop over DynamoDB until an author with an unknown Twitter handle is found."""
     found_items = None
     exclusive_start_key = None
     while not found_items:
@@ -53,10 +62,13 @@ def get_last_author_without_details():
         return found_items[0]
     return None
 
+
 def update_author(author_dict):
+    """Override the Author with an extended dictionary."""
     table_resource.put_item(
         Item=author_dict
     )
+
 
 if __name__ == '__main__':
     while True:
