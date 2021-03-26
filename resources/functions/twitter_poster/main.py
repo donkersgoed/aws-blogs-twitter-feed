@@ -4,7 +4,6 @@ import os
 from typing import List
 
 import boto3
-import yaml
 from TwitterAPI import TwitterAPI
 
 table_name = os.environ.get('BLOGS_TABLE')
@@ -126,18 +125,31 @@ def prepare_twitter_text(ddb_item):
 
 def prepare_authors(authors: List[str]):
     """Take a list of authors, convert them to twitter handles, add commas."""
-    with open('twitter_handles.yaml') as twitter_handles_file:
-        twitter_handles = yaml.load(
-            twitter_handles_file,
-            Loader=yaml.FullLoader
-        )
-
     mapped_authors = []
     for author in authors:
-        if author in twitter_handles.keys():
-            mapped_authors.append(twitter_handles[author])
-        else:
-            mapped_authors.append(author)
+        mapped_author = author  # Default to the provided name
+
+        # Fetch the author from DDB
+        ddb_result = ddb_client.get_item(
+            TableName=table_name,
+            Key={
+                'PK': {'S': 'Author'},
+                'SK': {'S': author}
+            },
+            ConsistentRead=True
+        )
+        if 'Item' in ddb_result:
+            ddb_author = ddb_result['Item']
+            if 'twitter_handle' in ddb_author:
+                # If the field 'twitter_handle' is set, check if it
+                # starts with an @. Add it if it doesn't, then return
+                # the twitter handle.
+                twitter_handle = ddb_author['twitter_handle']
+                if twitter_handle.startswith('@'):
+                    mapped_author = twitter_handle
+                else:
+                    mapped_author = f'@{twitter_handle}'
+        mapped_authors.append(mapped_author)
 
     authors_string = ''
     number_of_authors = len(authors)
