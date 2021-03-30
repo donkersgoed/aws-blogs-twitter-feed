@@ -144,7 +144,7 @@ def prepare_authors(authors: List[str]):
                 # If the field 'twitter_handle' is set, check if it
                 # starts with an @. Add it if it doesn't, then return
                 # the twitter handle.
-                twitter_handle = ddb_author['twitter_handle']
+                twitter_handle = ddb_author['twitter_handle']['S']
                 if twitter_handle.startswith('@'):
                     mapped_author = twitter_handle
                 else:
