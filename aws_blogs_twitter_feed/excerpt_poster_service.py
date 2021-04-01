@@ -42,7 +42,8 @@ class ExcerptPosterService(core.Construct):
 
         # SQS Event Source
         sqs_event_source = lambda_event_sources.SqsEventSource(
-            queue=resources['twitter_thread_queue']
+            queue=resources['twitter_thread_queue'],
+            batch_size=1,
         )
         handler.add_event_source(sqs_event_source)
 

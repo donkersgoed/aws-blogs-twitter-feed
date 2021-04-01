@@ -153,7 +153,7 @@ def retrieve_blogs_from_aws(latest_blog_in_ddb, page=0):
                 'title': html.unescape(additional_fields['title']),
                 'main_category': lookup_category(item_url, categories),
                 'categories': categories,
-                'post_excerpt': html.unescape(additional_fields.get('postExcerpt')),
+                'post_excerpt': html.unescape(additional_fields.get('postExcerpt', '')),
                 'featured_image_url': additional_fields.get('featuredImageUrl'),
                 'authors': html.unescape(json.loads(blog_item['author'])),
                 'date_created': blog_item['dateCreated'],

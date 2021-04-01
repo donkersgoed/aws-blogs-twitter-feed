@@ -105,7 +105,15 @@ def send_tweets(twitter_texts: List[str], tweet_id: str, twitter_api: TwitterAPI
 
 def prepare_twitter_texts(ddb_item):
     """Prepare the text to send, based on content from DDB."""
-    excerpt = ddb_item['post_excerpt']['S']
+    excerpt = None
+    try:
+        excerpt = ddb_item['post_excerpt']['S']
+    except Exception:  # pylint: disable=broad-except
+        pass
+
+    if not excerpt:
+        return None
+
     text = f'Excerpt: {excerpt}'
     max_tweet_length = 280
 

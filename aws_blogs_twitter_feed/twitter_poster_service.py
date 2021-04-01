@@ -37,12 +37,13 @@ class TwitterPosterService(core.Construct):
                 TWITTER_THREAD_QUEUE=resources['twitter_thread_queue'].queue_url,
             ),
             layers=[lambda_layer],
-            tracing=lambda_.Tracing.ACTIVE
+            tracing=lambda_.Tracing.ACTIVE,
         )
 
         # SQS Event Source
         sqs_event_source = lambda_event_sources.SqsEventSource(
-            queue=resources['twitter_post_queue']
+            queue=resources['twitter_post_queue'],
+            batch_size=1,
         )
         handler.add_event_source(sqs_event_source)
 
