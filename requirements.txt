@@ -1,1 +1,5 @@
--e .
+aws-cdk-lib==2.59.*
+constructs>=10.1.0
+PyYAML==6.*
+boto3==1.26.*
+TwitterAPI==2.8.*
