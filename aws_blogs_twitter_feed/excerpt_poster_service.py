@@ -18,13 +18,13 @@ class ExcerptPosterService(Construct):
             self,
             "ExcerptPostLambdaLayer",
             code=lambda_.Code.from_asset("resources/layers/excerpt_poster/layer.zip"),
-            compatible_runtimes=[lambda_.Runtime.PYTHON_3_8],
+            compatible_runtimes=[lambda_.Runtime.PYTHON_3_9],
         )
 
         handler = lambda_.Function(
             self,
             "ExcerptPostFunction",
-            runtime=lambda_.Runtime.PYTHON_3_8,
+            runtime=lambda_.Runtime.PYTHON_3_9,
             code=lambda_.Code.from_asset("resources/functions/excerpt_poster"),
             handler="main.lambda_handler",
             environment=dict(

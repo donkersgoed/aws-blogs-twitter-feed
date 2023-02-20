@@ -1,4 +1,4 @@
-aws-cdk-lib==2.59.*
+aws-cdk-lib==2.63.*
 constructs>=10.1.0
 PyYAML==6.*
 boto3==1.26.*

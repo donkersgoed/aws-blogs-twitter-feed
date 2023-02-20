@@ -39,7 +39,7 @@ class BlogFetcherService(Construct):
             handler="main.lambda_handler",
             environment=dict(
                 BLOGS_TABLE=table.table_name,
-                TWITTER_POST_QUEUE=twitter_post_queue.queue_url,
+                TWITTER_POST_QUEUE=twitter_post_queue.queue_url,  # deprecated
             ),
             layers=[lambda_layer],
             timeout=Duration.seconds(30),

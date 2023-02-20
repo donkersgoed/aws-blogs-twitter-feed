@@ -44,7 +44,7 @@ def store_blogs_in_ddb_and_sqs(aws_blogs):
             item_unique_id = hashlib.md5(blog["item_url"].encode()).hexdigest()
             sort_key = f"{date_created}#{item_unique_id}"
             store_blog_in_ddb(blog)
-            send_sort_key_to_sqs(sort_key)
+            send_sort_key_to_sqs(sort_key)  # deprecated
         except Exception as exc:  # pylint:disable=broad-except
             print(exc)  # Print the exception and continue to the next blog
 
@@ -95,7 +95,7 @@ def store_blog_in_ddb(blog: dict):
         else:
             raise exc
 
-    for author in authors:
+    for author in authors:  # deprecated
         try:
             ddb_client.put_item(
                 TableName=table_name,

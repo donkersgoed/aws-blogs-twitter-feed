@@ -5,7 +5,9 @@ from aws_cdk import Stack
 from constructs import Construct
 from aws_cdk import (
     Duration,
+    Fn,
     aws_dynamodb as dynamodb,
+    aws_events as events,
     aws_sqs as sqs,
     aws_secretsmanager as secretsmanager,
 )
@@ -14,6 +16,8 @@ from aws_cdk import (
 from . import blog_fetcher_service
 from . import twitter_poster_service
 from . import excerpt_poster_service
+from .app_constructs.ddb_stream_listener import DdbStreamListener
+from .app_constructs.mastodon_poster import MastodonPoster
 
 
 class AwsBlogsTwitterFeedStack(Stack):
@@ -32,6 +36,7 @@ class AwsBlogsTwitterFeedStack(Stack):
             sort_key=dynamodb.Attribute(name="SK", type=dynamodb.AttributeType.STRING),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             point_in_time_recovery=True,
+            stream=dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
         )
 
         blogs_table.add_global_secondary_index(
@@ -40,6 +45,26 @@ class AwsBlogsTwitterFeedStack(Stack):
                 name="main_category", type=dynamodb.AttributeType.STRING
             ),
         )
+
+        event_bus = events.EventBus(
+            scope=self, id="EventBus", event_bus_name="aws_blogs_event_bus"
+        )
+        events.Archive(
+            scope=self,
+            id="EventBusArchive",
+            source_event_bus=event_bus,
+            retention=Duration.days(30),
+            event_pattern=events.EventPattern(account=[Fn.ref("AWS::AccountId")]),
+        )
+
+        DdbStreamListener(
+            scope=self,
+            construct_id="DdbStreamListener",
+            event_bus=event_bus,
+            table=blogs_table,
+        )
+
+        MastodonPoster(scope=self, construct_id="MastodonPoster", event_bus=event_bus)
 
         twitter_secret = secretsmanager.Secret(self, "TwitterSecret")
 

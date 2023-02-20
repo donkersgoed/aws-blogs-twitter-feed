@@ -23,13 +23,13 @@ class TwitterPosterService(Construct):
             self,
             "TwitterPostLambdaLayer",
             code=lambda_.Code.from_asset("resources/layers/twitter_poster/layer.zip"),
-            compatible_runtimes=[lambda_.Runtime.PYTHON_3_8],
+            compatible_runtimes=[lambda_.Runtime.PYTHON_3_9],
         )
 
         handler = lambda_.Function(
             self,
             "TwitterPostFunction",
-            runtime=lambda_.Runtime.PYTHON_3_8,
+            runtime=lambda_.Runtime.PYTHON_3_9,
             code=lambda_.Code.from_asset("resources/functions/twitter_poster"),
             handler="main.lambda_handler",
             environment=dict(

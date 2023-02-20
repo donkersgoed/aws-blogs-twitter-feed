@@ -2,3 +2,4 @@ black==22.12.*
 mypy==0.790
 pydocstyle==6.2.*
 pylint==2.15.*
+Mastodon.py==1.8.*
