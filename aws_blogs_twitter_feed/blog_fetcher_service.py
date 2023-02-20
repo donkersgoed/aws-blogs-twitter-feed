@@ -27,7 +27,7 @@ class BlogFetcherService(Construct):
         lambda_layer = lambda_.LayerVersion(
             self,
             "BlogFetcherLambdaLayer",
-            code=lambda_.Code.from_asset("resources/layers/blog_fetcher/layer.zip"),
+            code=lambda_.Code.from_asset("resources/layers/blog_fetcher/python.zip"),
             compatible_runtimes=[lambda_.Runtime.PYTHON_3_8],
         )
 

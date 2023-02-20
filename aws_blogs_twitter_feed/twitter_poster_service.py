@@ -22,7 +22,7 @@ class TwitterPosterService(Construct):
         lambda_layer = lambda_.LayerVersion(
             self,
             "TwitterPostLambdaLayer",
-            code=lambda_.Code.from_asset("resources/layers/twitter_poster/layer.zip"),
+            code=lambda_.Code.from_asset("resources/layers/twitter_poster/python.zip"),
             compatible_runtimes=[lambda_.Runtime.PYTHON_3_9],
         )
 

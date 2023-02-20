@@ -17,7 +17,7 @@ class ExcerptPosterService(Construct):
         lambda_layer = lambda_.LayerVersion(
             self,
             "ExcerptPostLambdaLayer",
-            code=lambda_.Code.from_asset("resources/layers/excerpt_poster/layer.zip"),
+            code=lambda_.Code.from_asset("resources/layers/excerpt_poster/python.zip"),
             compatible_runtimes=[lambda_.Runtime.PYTHON_3_9],
         )
 
