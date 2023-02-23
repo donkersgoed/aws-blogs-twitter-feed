@@ -28,13 +28,13 @@ class BlogFetcherService(Construct):
             self,
             "BlogFetcherLambdaLayer",
             code=lambda_.Code.from_asset("resources/layers/blog_fetcher/python.zip"),
-            compatible_runtimes=[lambda_.Runtime.PYTHON_3_8],
+            compatible_runtimes=[lambda_.Runtime.PYTHON_3_9],
         )
 
         handler = lambda_.Function(
             self,
             "BlogFetcherFunction",
-            runtime=lambda_.Runtime.PYTHON_3_8,
+            runtime=lambda_.Runtime.PYTHON_3_9,
             code=lambda_.Code.from_asset("resources/functions/blog_fetcher"),
             handler="main.lambda_handler",
             environment=dict(
